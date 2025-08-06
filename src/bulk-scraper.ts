@@ -80,7 +80,7 @@ export class BulkScraper {
     // Phase 1: Collect URLs
     console.log('\n📋 Phase 1: Collecting article URLs...');
     const urlCollection = await this.urlCollector.collectArticleUrls(newsUrl);
-    
+
     if (!urlCollection.success) {
       throw new Error(`URL collection failed: ${urlCollection.error}`);
     }
@@ -177,33 +177,26 @@ export class BulkScraper {
   }
 
   private async scrapeInBatches(urls: string[]): Promise<ScrapeResult[]> {
-    const results: ScrapeResult[] = [];
-    const totalBatches = Math.ceil(urls.length / this.options.batchSize);
-    
-    console.log(`Processing ${urls.length} URLs in ${totalBatches} batches of ${this.options.batchSize}`);
+    console.log(`Processing ${urls.length} URLs with concurrency: ${this.options.concurrency}`);
 
-    for (let i = 0; i < urls.length; i += this.options.batchSize) {
-      const batch = urls.slice(i, i + this.options.batchSize);
-      const batchNumber = Math.floor(i / this.options.batchSize) + 1;
+    const results = await Bluebird.map(urls, async (url, index) => {
+      console.log(`🔄 Processing URL ${index + 1}/${urls.length}: ${url}`);
       
-      console.log(`\n🔄 Processing batch ${batchNumber}/${totalBatches} (${batch.length} URLs)`);
+      const result = await this.articleScraper.scrapeArticle(url);
       
-      const batchResults = await this.articleScraper.scrapeMultipleArticles(batch, this.options.concurrency);
-      results.push(...batchResults);
-      
-      const successCount = batchResults.filter(r => r.success).length;
-      console.log(`✓ Batch ${batchNumber} complete: ${successCount}/${batch.length} successful`);
-      
-      // Save progress after each batch
-      if (batchNumber % 5 === 0 || batchNumber === totalBatches) {
-        await this.saveProgressResults(results, batchNumber);
+      if (result.success) {
+        console.log(`✓ Scraped: ${result.data?.title || 'No title'}`);
+      } else {
+        console.log(`✗ Failed: ${result.error}`);
       }
       
-      // Small delay between batches
-      if (i + this.options.batchSize < urls.length) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      // Save progress periodically
+      if ((index + 1) % 50 === 0) {
+        await this.saveProgressResults([result], Math.floor(index / 50) + 1);
       }
-    }
+      
+      return result;
+    }, { concurrency: this.options.concurrency });
 
     return results;
   }
