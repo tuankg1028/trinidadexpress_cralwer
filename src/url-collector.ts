@@ -91,7 +91,9 @@ export class URLCollector {
         console.log(`Visiting page ${currentPage}: ${pageUrl}`);
         
         await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(this.options.pageDelay);
+        
+        // Scroll to bottom to ensure page fully loads
+        await this.scrollToBottomAndWait(page);
         
         // Extract URLs from current page
         const newUrls = await this.extractArticleUrls(page);
@@ -191,6 +193,37 @@ export class URLCollector {
     url.searchParams.set('o', offset.toString());
     
     return url.toString();
+  }
+
+  private async scrollToBottomAndWait(page: Page): Promise<void> {
+    // Get current scroll height
+    const previousHeight = await page.evaluate(() => document.body.scrollHeight);
+    
+    // Scroll to bottom
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    // Wait for potential new content to load
+    await page.waitForTimeout(this.options.pageDelay);
+
+    // Check if new content was loaded by comparing scroll height
+    try {
+      await page.waitForFunction(
+        (prevHeight) => document.body.scrollHeight > prevHeight,
+        previousHeight,
+        { timeout: this.options.pageDelay }
+      );
+    } catch (e) {
+      // Timeout is fine, just means no new content loaded
+    }
+
+    // Additional wait for network requests to complete
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 3000 });
+    } catch (e) {
+      // Timeout is acceptable here
+    }
   }
 
   private async saveUrls(): Promise<void> {
