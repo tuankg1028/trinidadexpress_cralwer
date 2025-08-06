@@ -74,8 +74,8 @@ export class URLCollector {
       
       // Set a large viewport to see more content (desktop view)
       await page.setViewportSize({ width: 1920, height: 2160 });
-      
-      await page.goto(baseUrl, { waitUntil: 'load' });
+
+      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 180_000 });
 
       let currentPage = 1;
       let lastUrlCount = this.collectedUrls.size;
