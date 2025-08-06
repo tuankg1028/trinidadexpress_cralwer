@@ -1,0 +1,24 @@
+{
+  "name": "trinidadexpress_cralwer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node --watch src/index.ts",
+    "collect-urls": "ts-node src/index.ts collect-urls",
+    "bulk-scrape": "ts-node src/index.ts bulk-scrape",
+    "retry-failed": "ts-node src/index.ts retry-failed",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@types/node": "^24.2.0",
+    "playwright": "^1.54.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
