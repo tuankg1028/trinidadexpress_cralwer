@@ -61,7 +61,7 @@ export class URLCollector {
     }
   }
 
-  async collectArticleUrls(baseUrl: string = 'https://trinidadexpress.com/search/?q=&t=article&d1=1000+days+ago&l=1000&app%5B0%5D=editorial'): Promise<CollectionResult> {
+  async collectArticleUrls(baseUrl: string = 'https://trinidadexpress.com/search/'): Promise<CollectionResult> {
     try {
       await this.init();
       const page = await this.browser!.newPage();
@@ -191,7 +191,11 @@ export class URLCollector {
     // Parse base URL and add/update the offset parameter
     const url = new URL(baseUrl);
     url.searchParams.set('o', offset.toString());
-    
+    url.searchParams.set('q', '');
+    url.searchParams.set('t', 'article');
+    url.searchParams.set('d1', '1000 days ago');
+    url.searchParams.set('l', '1000');
+    url.searchParams.set('app[0]', 'editorial');
     return url.toString();
   }
 
