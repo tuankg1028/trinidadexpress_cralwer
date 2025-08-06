@@ -54,13 +54,15 @@ export async function scrapeArticle(url: string, options?: {
 }
 
 export async function collectUrls(targetCount: number = 10000, options?: {
-  scrollDelay?: number;
+  pageDelay?: number;
+  maxPages?: number;
   headless?: boolean;
   resumeFromFile?: boolean;
 }) {
   const collector = new URLCollector({
     targetCount,
-    scrollDelay: options?.scrollDelay,
+    pageDelay: options?.pageDelay,
+    maxPages: options?.maxPages,
     headless: options?.headless,
     resumeFromFile: options?.resumeFromFile
   });

@@ -5,8 +5,8 @@ import * as path from 'path';
 export interface CollectorOptions {
   targetCount?: number;
   timeout?: number;
-  scrollDelay?: number;
-  maxScrollAttempts?: number;
+  pageDelay?: number;
+  maxPages?: number;
   saveInterval?: number;
   headless?: boolean;
   resumeFromFile?: boolean;
@@ -30,8 +30,8 @@ export class URLCollector {
     this.options = {
       targetCount: options.targetCount || 10000,
       timeout: options.timeout || 60000,
-      scrollDelay: options.scrollDelay || 2000,
-      maxScrollAttempts: options.maxScrollAttempts || 50_000,
+      pageDelay: options.pageDelay || 2000,
+      maxPages: options.maxPages || 100,
       saveInterval: options.saveInterval || 100,
       headless: options.headless !== false,
       resumeFromFile: options.resumeFromFile || false,
@@ -61,7 +61,7 @@ export class URLCollector {
     }
   }
 
-  async collectArticleUrls(baseUrl: string = 'https://trinidadexpress.com/news/'): Promise<CollectionResult> {
+  async collectArticleUrls(baseUrl: string = 'https://trinidadexpress.com/search/?q=&t=article&d1=1000+days+ago&l=1000&app%5B0%5D=editorial'): Promise<CollectionResult> {
     try {
       await this.init();
       const page = await this.browser!.newPage();
@@ -77,23 +77,30 @@ export class URLCollector {
       
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
 
-      let scrollAttempts = 0;
+      let currentPage = 1;
       let lastUrlCount = this.collectedUrls.size;
-      let stagnantScrolls = 0;
-      const maxStagnantScrolls = 5;
+      let stagnantPages = 0;
+      const maxStagnantPages = 3;
 
       while (
         this.collectedUrls.size < this.options.targetCount && 
-        scrollAttempts < this.options.maxScrollAttempts
+        currentPage <= this.options.maxPages
       ) {
-        // Extract URLs from current page state
+        // Generate URL for current page
+        const pageUrl = this.generatePageUrl(baseUrl, currentPage);
+        console.log(`Visiting page ${currentPage}: ${pageUrl}`);
+        
+        await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(this.options.pageDelay);
+        
+        // Extract URLs from current page
         const newUrls = await this.extractArticleUrls(page);
         const prevCount = this.collectedUrls.size;
         
         newUrls.forEach(url => this.collectedUrls.add(url));
         
         const newUrlsFound = this.collectedUrls.size - prevCount;
-        console.log(`Scroll ${scrollAttempts + 1}: Found ${newUrlsFound} new URLs (Total: ${this.collectedUrls.size})`);
+        console.log(`Page ${currentPage}: Found ${newUrlsFound} new URLs (Total: ${this.collectedUrls.size})`);
 
         // Save progress periodically
         if (this.collectedUrls.size % this.options.saveInterval === 0 || 
@@ -104,13 +111,13 @@ export class URLCollector {
 
         // Check if we found new URLs
         if (newUrlsFound === 0) {
-          stagnantScrolls++;
-          if (stagnantScrolls >= maxStagnantScrolls) {
-            console.log('No new URLs found after multiple scrolls. Stopping collection.');
+          stagnantPages++;
+          if (stagnantPages >= maxStagnantPages) {
+            console.log('No new URLs found after multiple pages. Stopping collection.');
             break;
           }
         } else {
-          stagnantScrolls = 0;
+          stagnantPages = 0;
         }
 
         // Stop if we've reached our target
@@ -119,9 +126,7 @@ export class URLCollector {
           break;
         }
 
-        // Scroll to bottom and wait for new content
-        await this.scrollAndWait(page);
-        scrollAttempts++;
+        currentPage++;
       }
 
       // Final save
@@ -177,35 +182,15 @@ export class URLCollector {
     });
   }
 
-  private async scrollAndWait(page: Page): Promise<void> {
-    // Get current scroll height
-    const previousHeight = await page.evaluate(() => document.body.scrollHeight);
+  private generatePageUrl(baseUrl: string, page: number): string {
+    // Calculate offset: page 1 = offset 1010, page 2 = offset 2010, etc.
+    const offset = (page * 1000) + 10;
     
-    // Scroll to bottom
-    await page.evaluate(() => {
-      window.scrollTo(0, document.body.scrollHeight);
-    });
-
-    // Wait for potential new content to load
-    await page.waitForTimeout(this.options.scrollDelay);
-
-    // Check if new content was loaded by comparing scroll height
-    try {
-      await page.waitForFunction(
-        (prevHeight) => document.body.scrollHeight > prevHeight,
-        previousHeight,
-        { timeout: this.options.scrollDelay }
-      );
-    } catch (e) {
-      // Timeout is fine, just means no new content loaded
-    }
-
-    // Additional wait for network requests to complete
-    try {
-      await page.waitForLoadState('networkidle', { timeout: 3000 });
-    } catch (e) {
-      // Timeout is acceptable here
-    }
+    // Parse base URL and add/update the offset parameter
+    const url = new URL(baseUrl);
+    url.searchParams.set('o', offset.toString());
+    
+    return url.toString();
   }
 
   private async saveUrls(): Promise<void> {
