@@ -185,18 +185,10 @@ export class URLCollector {
   }
 
   private generatePageUrl(baseUrl: string, page: number): string {
-    // Calculate offset: page 1 = offset 1010, page 2 = offset 2010, etc.
     const offset = (page * 1000) + 10;
     
     // Parse base URL and add/update the offset parameter
-    const url = new URL(baseUrl);
-    url.searchParams.set('o', offset.toString());
-    url.searchParams.set('q', '');
-    url.searchParams.set('t', 'article');
-    url.searchParams.set('d1', '1000 days ago');
-    url.searchParams.set('l', '1000');
-    url.searchParams.set('app[0]', 'editorial');
-    return url.toString();
+    return `https://trinidadexpress.com/search/?q=&t=article&d1=1000+days+ago&o=${offset}&l=1000&app%5B0%5D=editorial`
   }
 
   private async scrollToBottomAndWait(page: Page): Promise<void> {
