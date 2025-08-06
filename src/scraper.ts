@@ -1,5 +1,6 @@
 import { chromium, Browser, Page } from 'playwright';
 import { ArticleData, ScrapeOptions, ScrapeResult } from './types';
+import Bluebird = require('bluebird');
 
 export class TrinidadExpressScraper {
   private browser: Browser | null = null;
@@ -177,10 +178,18 @@ export class TrinidadExpressScraper {
     }
   }
 
-  async scrapeMultipleArticles(urls: string[]): Promise<ScrapeResult[]> {
-    const results: ScrapeResult[] = [];
+  async scrapeMultipleArticles(urls: string[], concurrency: number = 1): Promise<ScrapeResult[]> {
+    console.log(`Starting to scrape ${urls.length} articles with concurrency: ${concurrency}`);
     
-    console.log(`Starting to scrape ${urls.length} articles...`);
+    if (concurrency === 1) {
+      return await this.scrapeSequentially(urls);
+    } else {
+      return await this.scrapeInParallel(urls, concurrency);
+    }
+  }
+
+  private async scrapeSequentially(urls: string[]): Promise<ScrapeResult[]> {
+    const results: ScrapeResult[] = [];
     
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i];
@@ -201,6 +210,32 @@ export class TrinidadExpressScraper {
     }
     
     console.log(`Completed scraping. Success: ${results.filter(r => r.success).length}/${urls.length}`);
+    return results;
+  }
+
+  private async scrapeInParallel(urls: string[], concurrency: number): Promise<ScrapeResult[]> {
+    console.log(`Processing ${urls.length} URLs with ${concurrency} concurrent scrapers using Bluebird`);
+    
+    // Use Bluebird.map with concurrency control
+    const results = await Bluebird.map<string, ScrapeResult>(urls, async (url: string, index: number) => {
+      const urlNumber = index + 1;
+      console.log(`🔄 [${urlNumber}/${urls.length}] Starting: ${url}`);
+      
+      const result = await this.scrapeArticle(url);
+      
+      if (result.success) {
+        console.log(`✅ [${urlNumber}/${urls.length}] Success: ${result.data?.title}`);
+      } else {
+        console.log(`❌ [${urlNumber}/${urls.length}] Failed: ${result.error}`);
+      }
+      
+      return result;
+    }, { 
+      concurrency: concurrency 
+    });
+    
+    const totalSuccess = results.filter((r: ScrapeResult) => r.success).length;
+    console.log(`\n🎉 Parallel scraping completed! Success: ${totalSuccess}/${urls.length}`);
     
     return results;
   }

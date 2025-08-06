@@ -6,11 +6,13 @@ A Playwright-based web scraper for extracting article data from Trinidad Express
 
 - **URL Collection**: Automatically collect thousands of article URLs using infinite scroll
 - **Bulk Scraping**: Process large batches of articles with progress tracking
+- **Parallel Processing**: Scrape multiple articles simultaneously for faster performance
 - **Data Extraction**: Extract title, content, category, publication date, and metadata
 - **Multiple Export Formats**: JSON and/or CSV export with metadata
+- **Failed URL Tracking**: Automatically track and retry failed scraping attempts
 - **Resume Functionality**: Continue from where you left off if interrupted
 - **Error Handling**: Built-in retry logic and comprehensive error handling
-- **Rate Limiting**: Respectful delays between requests
+- **Rate Limiting**: Respectful delays between requests with parallel support
 - **TypeScript Support**: Full type definitions included
 
 ## Installation
@@ -48,6 +50,7 @@ const results = await scrapeArticles(urls, {
   timeout: 30000,        // 30 second timeout per page
   retries: 3,            // Retry failed requests 3 times
   delay: 2000,           // 2 second delay between requests
+  concurrency: 5,        // Scrape 5 articles in parallel
   headless: true,        // Run browser in headless mode
   exportFormat: 'both',  // Export to both JSON and CSV
   outputFilename: 'my_articles' // Custom filename
@@ -78,6 +81,7 @@ import { bulkScrape } from './src';
 const result = await bulkScrape({
   targetUrlCount: 5000,  // Collect up to 5000 URLs
   batchSize: 50,         // Process 50 articles at a time
+  concurrency: 5,        // Scrape 5 articles in parallel within each batch
   exportFormat: 'both',  // Export to both JSON and CSV
   headless: true
 });
@@ -103,7 +107,7 @@ const scraper = new TrinidadExpressScraper({
   headless: true
 });
 
-const results = await scraper.scrapeMultipleArticles(urlResult.urls);
+const results = await scraper.scrapeMultipleArticles(urlResult.urls, 3); // 3 parallel scrapers
 await scraper.close();
 
 // Finally, export results
@@ -119,6 +123,7 @@ await exporter.exportToCSV(results);
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm run collect-urls [count]` - Collect article URLs (default: 10000)
 - `npm run bulk-scrape [count]` - Run full pipeline: collect URLs and scrape articles (default: 1000)
+- `npm run retry-failed <file>` - Retry scraping failed URLs from a failed URLs file
 
 ## Output Format
 
@@ -143,7 +148,13 @@ await exporter.exportToCSV(results);
       "scrapedAt": "2025-08-06T10:11:05.357Z"
     }
   ],
-  "errors": []
+  "failedUrls": [
+    {
+      "url": "https://trinidadexpress.com/failed-article/...",
+      "error": "Timeout after 30000ms",
+      "timestamp": "2025-08-06T10:15:30.123Z"
+    }
+  ]
 }
 ```
 
@@ -157,6 +168,8 @@ Contains columns: URL, Title, Published Date, Category, Content, Reading Time, S
 | timeout | number | 30000 | Page load timeout in milliseconds |
 | retries | number | 3 | Number of retry attempts for failed requests |
 | delay | number | 1000 | Delay between requests in milliseconds |
+| concurrency | number | 1 | Number of articles to scrape in parallel |
+| batchSize | number | 50 | Number of URLs to process in each batch |
 | headless | boolean | true | Run browser in headless mode |
 | exportFormat | 'json' \| 'csv' \| 'both' | 'json' | Export format |
 | outputFilename | string | auto-generated | Custom output filename |

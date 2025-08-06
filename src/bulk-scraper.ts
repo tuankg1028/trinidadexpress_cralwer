@@ -3,6 +3,7 @@ import { TrinidadExpressScraper } from './scraper';
 import { DataExporter } from './exporter';
 import { ScrapeResult } from './types';
 import * as fs from 'fs/promises';
+import * as Bluebird from 'bluebird';
 
 export interface BulkScrapingOptions {
   // URL Collection options
@@ -16,6 +17,7 @@ export interface BulkScrapingOptions {
   scrapingRetries?: number;
   scrapingDelay?: number;
   batchSize?: number;
+  concurrency?: number;
   
   // General options
   headless?: boolean;
@@ -39,6 +41,7 @@ export class BulkScraper {
       scrapingRetries: options.scrapingRetries || 3,
       scrapingDelay: options.scrapingDelay || 1000,
       batchSize: options.batchSize || 50,
+      concurrency: options.concurrency || 3,
       headless: options.headless !== false,
       exportFormat: options.exportFormat || 'json',
       outputPrefix: options.outputPrefix || 'trinidad_express_bulk'
@@ -182,7 +185,7 @@ export class BulkScraper {
       
       console.log(`\n🔄 Processing batch ${batchNumber}/${totalBatches} (${batch.length} URLs)`);
       
-      const batchResults = await this.articleScraper.scrapeMultipleArticles(batch);
+      const batchResults = await this.articleScraper.scrapeMultipleArticles(batch, this.options.concurrency);
       results.push(...batchResults);
       
       const successCount = batchResults.filter(r => r.success).length;

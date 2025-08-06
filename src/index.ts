@@ -8,6 +8,7 @@ export async function scrapeArticles(urls: string[], options?: {
   retries?: number;
   delay?: number;
   headless?: boolean;
+  concurrency?: number;
   exportFormat?: 'json' | 'csv' | 'both';
   outputFilename?: string;
 }) {
@@ -21,7 +22,7 @@ export async function scrapeArticles(urls: string[], options?: {
   const exporter = new DataExporter();
 
   try {
-    const results = await scraper.scrapeMultipleArticles(urls);
+    const results = await scraper.scrapeMultipleArticles(urls, options?.concurrency || 1);
     
     const exportFormat = options?.exportFormat || 'json';
     
@@ -75,6 +76,7 @@ export async function collectUrls(targetCount: number = 10000, options?: {
 export async function bulkScrape(options?: {
   targetUrlCount?: number;
   batchSize?: number;
+  concurrency?: number;
   exportFormat?: 'json' | 'csv' | 'both';
   headless?: boolean;
 }) {
@@ -84,11 +86,13 @@ export async function bulkScrape(options?: {
 
 export async function retryFailedUrls(failedUrlsFilePath: string, options?: {
   batchSize?: number;
+  concurrency?: number;
   exportFormat?: 'json' | 'csv' | 'both';
   headless?: boolean;
 }) {
   const bulkScraper = new BulkScraper({
     batchSize: options?.batchSize || 25,
+    concurrency: options?.concurrency || 3,
     exportFormat: options?.exportFormat || 'json',
     headless: options?.headless !== false
   });
@@ -150,6 +154,7 @@ if (require.main === module) {
     bulkScrape({
       targetUrlCount: targetCount,
       batchSize: 25,
+      concurrency: 5, // Process 5 articles in parallel
       exportFormat: 'both',
       headless: false
     }).then(() => {
@@ -170,6 +175,7 @@ if (require.main === module) {
     
     retryFailedUrls(failedUrlsFile, {
       batchSize: 20,
+      concurrency: 4, // Use 4 parallel scrapers for retries
       exportFormat: 'both',
       headless: false
     }).then((results) => {
@@ -185,6 +191,7 @@ if (require.main === module) {
     
     scrapeArticles([testUrl], { 
       exportFormat: 'both',
+      concurrency: 1, // Single article, no need for parallel
       headless: false
     }).then(() => {
       console.log('Test scraping completed!');
