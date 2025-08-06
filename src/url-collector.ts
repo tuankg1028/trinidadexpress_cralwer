@@ -75,7 +75,7 @@ export class URLCollector {
       // Set a large viewport to see more content (desktop view)
       await page.setViewportSize({ width: 1920, height: 2160 });
       
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+      await page.goto(baseUrl, { waitUntil: 'load' });
 
       let currentPage = 1;
       let lastUrlCount = this.collectedUrls.size;
@@ -220,7 +220,7 @@ export class URLCollector {
 
     // Additional wait for network requests to complete
     try {
-      await page.waitForLoadState('networkidle', { timeout: 3000 });
+      await page.waitForLoadState('networkidle', { timeout: 10_000 });
     } catch (e) {
       // Timeout is acceptable here
     }
