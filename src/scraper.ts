@@ -35,7 +35,7 @@ export class TrinidadExpressScraper {
         const page = await this.browser!.newPage();
         
         await page.setDefaultTimeout(this.options.timeout);
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
         await page.waitForLoadState('domcontentloaded');
         await page.waitForSelector('.asset .asset-header h1', { timeout: 10000 });
