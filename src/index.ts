@@ -154,7 +154,7 @@ if (require.main === module) {
     bulkScrape({
       targetUrlCount: targetCount,
       batchSize: 25,
-      concurrency: 5, // Process 5 articles in parallel
+      concurrency: 10, // Process 10 articles in parallel
       exportFormat: 'both',
       headless: false
     }).then(() => {
