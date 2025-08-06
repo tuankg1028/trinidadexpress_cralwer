@@ -31,7 +31,7 @@ export class URLCollector {
       targetCount: options.targetCount || 10000,
       timeout: options.timeout || 60000,
       scrollDelay: options.scrollDelay || 2000,
-      maxScrollAttempts: options.maxScrollAttempts || 50,
+      maxScrollAttempts: options.maxScrollAttempts || 50_000,
       saveInterval: options.saveInterval || 100,
       headless: options.headless !== false,
       resumeFromFile: options.resumeFromFile || false,
