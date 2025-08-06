@@ -9,7 +9,8 @@ export interface BulkScrapingOptions {
   // URL Collection options
   targetUrlCount?: number;
   collectionTimeout?: number;
-  scrollDelay?: number;
+  pageDelay?: number;
+  maxPages?: number;
   resumeCollection?: boolean;
   
   // Scraping options
@@ -35,7 +36,8 @@ export class BulkScraper {
     this.options = {
       targetUrlCount: options.targetUrlCount || 10000,
       collectionTimeout: options.collectionTimeout || 60000,
-      scrollDelay: options.scrollDelay || 2000,
+      pageDelay: options.pageDelay || 2000,
+      maxPages: options.maxPages || 100,
       resumeCollection: options.resumeCollection !== false,
       scrapingTimeout: options.scrapingTimeout || 30000,
       scrapingRetries: options.scrapingRetries || 3,
@@ -50,7 +52,8 @@ export class BulkScraper {
     this.urlCollector = new URLCollector({
       targetCount: this.options.targetUrlCount,
       timeout: this.options.collectionTimeout,
-      scrollDelay: this.options.scrollDelay,
+      pageDelay: this.options.pageDelay,
+      maxPages: this.options.maxPages,
       headless: this.options.headless,
       resumeFromFile: this.options.resumeCollection,
       outputFile: `${this.options.outputPrefix}_urls.json`
