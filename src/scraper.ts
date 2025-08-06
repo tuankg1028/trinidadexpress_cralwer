@@ -17,7 +17,10 @@ export class TrinidadExpressScraper {
 
   async init(): Promise<void> {
     if (!this.browser) {
-      this.browser = await chromium.launch({ headless: this.options.headless });
+      this.browser = await chromium.launch({ 
+        headless: this.options.headless,
+        args: ['--no-sandbox', '--disable-dev-shm-usage']
+      });
     }
   }
 
@@ -33,6 +36,9 @@ export class TrinidadExpressScraper {
       try {
         await this.init();
         const page = await this.browser!.newPage();
+        
+        // Set a large viewport for consistent rendering
+        await page.setViewportSize({ width: 1920, height: 1080 });
         
         await page.setDefaultTimeout(this.options.timeout);
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });

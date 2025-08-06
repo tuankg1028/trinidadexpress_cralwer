@@ -71,6 +71,10 @@ export class URLCollector {
       console.log(`Already collected: ${this.collectedUrls.size} URLs`);
 
       await page.setDefaultTimeout(this.options.timeout);
+      
+      // Set a large viewport to see more content (desktop view)
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
 
       let scrollAttempts = 0;

@@ -3,7 +3,7 @@ import { TrinidadExpressScraper } from './scraper';
 import { DataExporter } from './exporter';
 import { ScrapeResult } from './types';
 import * as fs from 'fs/promises';
-import * as Bluebird from 'bluebird';
+import Bluebird = require('bluebird');
 
 export interface BulkScrapingOptions {
   // URL Collection options
